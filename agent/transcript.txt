@@ -9,14 +9,20 @@ Question 1: What changed in pandas 3.0 and Polars 2.0?
 ----------------------------------------------------------------
 Run: python ask_pydata.py versions
 
-Query executed successfully. Found 5 documents: 
+Query executed successfully. Found 11 documents: 
+<documents>{"changeType":"behavior-change","sourceUrl":"https://pandas.pydata.org/docs/whatsnew/v3.0.0.html","summary":"df.append() was removed (deprecated since 1.4).","version":"3.0.0"}</documents>
 <documents>{"changeType":"behavior-change","sourceUrl":"https://pandas.pydata.org/docs/dev/user_guide/migration.html","summary":"String dtype is now the default; no longer backed by NumPy object dtype.","version":"3.0.0"}</documents>
+<documents>{"changeType":"behavior-change","sourceUrl":"https://pandas.pydata.org/docs/whatsnew/v3.0.0.html","summary":"DataFrame.iteritems() removed; use .items().","version":"3.0.0"}</documents>
 <documents>{"changeType":"behavior-change","sourceUrl":"https://pandas.pydata.org/docs/dev/user_guide/migration.html","summary":"Copy-on-Write (CoW) is now the default; chained assignment semantics changed.","version":"3.0.0"}</documents>
 <documents>{"changeType":"breaking","sourceUrl":"https://pandas.pydata.org/docs/whatsnew/v3.0.0.html","summary":"Many APIs deprecated in 2.x were removed in 3.0.","version":"3.0.0"}</documents>
+<documents>{"changeType":"breaking","sourceUrl":"https://pandas.pydata.org/docs/whatsnew/v3.0.0.html","summary":"The no-longer-supported 'warn' mode for chained assignment is removed; CoW is always on.","version":"3.0.0"}</documents>
 <documents>{"changeType":"new","sourceUrl":"https://pola.rs/posts/announcing-polars-2/","summary":"Full migration guide published for moving from 1.x to 2.0.","version":"2.0.0"}</documents>
+<documents>{"changeType":"breaking","sourceUrl":"https://pola.rs/posts/announcing-polars-2/","summary":"Some 1.x LazyFrame APIs renamed for consistency with eager API.","version":"2.0.0"}</documents>
+<documents>{"changeType":"new","sourceUrl":"https://pola.rs/posts/announcing-polars-2/","summary":"Native streaming engine now default; no need to opt in with .collect(engine='streaming').","version":"2.0.0"}</documents>
 <documents>{"changeType":"behavior-change","sourceUrl":"https://pola.rs/posts/announcing-polars-2/","summary":"Streaming engine is now the default for all LazyFrame queries; expected ~5x faster on aggregate.","version":"2.0.0"}</documents>
-<count>5</count>
-<totalAvailable>5</totalAvailable>
+<documents>{"changeType":"new","sourceUrl":"https://duckdb.org/2025/08/27/announcing-duckdb-130.html","summary":"Native pandas/Polars interop improved; register() accepts Polars DataFrames directly.","version":"1.3.0"}</documents>
+<count>11</count>
+<totalAvailable>11</totalAvailable>
 
 
 
@@ -24,14 +30,22 @@ Question 2: How do I migrate a pandas groupby/merge/fillna to Polars?
 ----------------------------------------------------------------
 Run: python ask_pydata.py migrate
 
-Query executed successfully. Found 5 documents: 
+Query executed successfully. Found 13 documents: 
 <documents>{"fromApi":"df.groupby(col).agg('x')","semanticDiff":"Polars uses expressions in agg(); aggregation functions must be wrapped in pl.col() or similar.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.group_by(col).agg(pl.col('x'))"}</documents>
 <documents>{"fromApi":"df.fillna(value)","semanticDiff":"Different name; Polars distinguishes null vs NaN.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.fill_null(value)"}</documents>
+<documents>{"fromApi":"df.rename(columns={'old': 'new'})","semanticDiff":"Polars rename takes a dict directly, no columns= kwarg.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.rename({'old': 'new'})"}</documents>
+<documents>{"fromApi":"df.groupby('k').agg(x=('v','sum'))","semanticDiff":"Named aggregation in pandas dict syntax becomes .alias() in Polars expressions.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.group_by('k').agg(pl.col('v').sum().alias('x'))"}</documents>
 <documents>{"fromApi":"pd.merge(a, b, on=k)","semanticDiff":"Join API differs slightly; Polars uses .join() directly on the frame.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"a.join(b, on=k)"}</documents>
+<documents>{"fromApi":"df.merge(other, on='k', how='left')","semanticDiff":"Polars join how names match: left/inner/outer/anti/semi. pandas 'outer' = polars 'full'.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.join(other, on='k', how='left')"}</documents>
+<documents>{"fromApi":"df.isna().sum()","semanticDiff":"Polars has a dedicated null_count(); distinguishes null from NaN.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.null_count()"}</documents>
 <documents>{"fromApi":"df.apply(func)","semanticDiff":"Polars strongly prefers vectorized expressions; apply() is slow and should be avoided.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.select([pl.col(c).map(func)]) or native expressions"}</documents>
+<documents>{"fromApi":"pd.read_sql(query, conn)","semanticDiff":"DuckDB can query pandas/Polars frames in-process; no separate DB connection needed.","sourceUrl":"https://duckdb.org/docs/guides/python/import_pandas.html","toApi":"duckdb.sql(query).pl()"}</documents>
+<documents>{"fromApi":"df.sort_values('col')","semanticDiff":"Same semantics; ascending default true.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.sort('col')"}</documents>
+<documents>{"fromApi":"df['col'].astype('int64')","semanticDiff":"Polars uses expressions; cast types are pl.Int64 not 'int64'.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.with_columns(pl.col('col').cast(pl.Int64))"}</documents>
+<documents>{"fromApi":"df.pivot_table(index='a', columns='b', values='v', aggfunc='mean')","semanticDiff":"Polars pivot requires aggregate_function explicitly; pandas infers.","sourceUrl":"https://docs.pola.rs/user-guide/migration/pandas/","toApi":"df.pivot(index='a', on='b', values='v', aggregate_function='mean')"}</documents>
 <documents>{"fromApi":"pd.read_csv(path)","semanticDiff":"Polars read_csv returns a DataFrame eagerly; lazy equivalent is pl.scan_csv().","sourceUrl":"https://docs.pola.rs/","toApi":"pl.read_csv(path)"}</documents>
-<count>5</count>
-<totalAvailable>5</totalAvailable>
+<count>13</count>
+<totalAvailable>13</totalAvailable>
 
 
 
